@@ -6,10 +6,9 @@ Billing.AllowBillingNegative = true -- if true it will alow to bill player to ne
 
 Billing.GiveReceipt = true          -- if true the player who got billed will receive a receipt as item
 
-Billing.ReceiptItem =
-"receipt"                 -- the item that will be given to the player who paid the bill, add this item to the database
+Billing.ReceiptItem = "receipt"     -- the item that will be given to the player who paid the bill, add this item to the database
 
-Billing.ServerYear = 1899 -- the year that will be used in the receipt description
+Billing.ServerYear = 1899           -- the year that will be used in the receipt description
 
 -- jobs allowed to use billing and ranks
 Billing.Jobs = {
@@ -26,3 +25,14 @@ Billing.Jobs = {
 Billing.Command = "bill"
 
 Billing.MaxBillAmount = 1000 -- players can not be billed more than this amount
+
+--server side function to check if player is onduty
+local isServer = IsDuplicityVersion()
+if isServer then
+    Billing.GetIsOnduty = function(source)
+        -- add here your own logic for other jobs
+        -- by default these will work for vorp_medic and vorp_police
+        local isDuty = (Player(source).state.isMedicDuty or Player(source).state.isPoliceDuty) and true or false
+        return isDuty -- do return true to remove the onduty check
+    end
+end
