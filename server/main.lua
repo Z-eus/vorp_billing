@@ -27,21 +27,25 @@ end)
 
 -- we need an event to register the bill
 RegisterNetEvent("vorp_billing:server:SendBill", function(data)
-    local _source = source
-    local user = Core.getUser(_source)
+    local _source <const> = source
+    local user <const> = Core.getUser(_source)
     if not user then return end
 
-    local character = user.getUsedCharacter
-    local job = character.job
-    local jobGrade = character.jobGrade
+    local character <const> = user.getUsedCharacter
+    local job <const> = character.job
+    local jobGrade <const> = character.jobGrade
 
     if not Billing.Jobs[job] or Billing.Jobs[job] < jobGrade then
         return Core.NotifyObjective(source, "You are not allowed to bill", 5000)
     end
 
-    local target = Core.getUser(data.target)
+    local target <const> = Core.getUser(data.target)
     if not target then
         return Core.NotifyObjective(source, "Target not found you cant bill players that are not online", 5000)
+    end
+
+    if data.amount > Billing.MaxBillAmount then
+        return Core.NotifyObjective(source, "You can not bill more than " .. Billing.MaxBillAmount, 5000)
     end
 
     if Billing.GiveMoneyToJob then
