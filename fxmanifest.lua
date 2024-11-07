@@ -7,9 +7,9 @@ author 'VORP @outsider'
 name 'vorp_billing'
 description 'Vorp billing system'
 
-shared_script 'config.lua'
+shared_scripts { 'config.lua', 'languages/translation.lua' }
 client_script 'client/main.lua'
-server_script 'server/main.lua'
+server_scripts { 'server/main.lua', 'languages/logs.lua' }
 
 version '0.1'
 vorp_checker 'yes'
