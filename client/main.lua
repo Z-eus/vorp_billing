@@ -1,5 +1,6 @@
 local MenuData <const> = exports.vorp_menu:GetMenuData()
 local Core <const> = exports.vorp_core:GetCore()
+local T <const> = Translation.Langs[Billing.Lang]
 
 RegisterNetEvent("vorp_billing:client:openMenu", function()
     OpenBillingMenu()
@@ -9,7 +10,7 @@ local function myInput(header, placeholder, type, pattern, title)
     local input <const> = {
         type = "enableinput",
         inputType = "input",
-        button = "Confirm",
+        button = T.MenuLabels.confirm,
         placeholder = placeholder,
         style = "block",
         attributes = {
@@ -30,23 +31,22 @@ function OpenBillingMenu()
     local amount = 0
 
     local elements <const> = {
-        { label = "Player ID",   value = "playerId", desc = "The ID of the player you want to bill" },
-        { label = "Bill Reason", value = "reason",   desc = "The reason for the bill" },
-        { label = "Bill Amount", value = "amount",   desc = "The amount of money to bill" },
-        { label = "Confirm",     value = "confirm",  desc = "Submit the bill" },
+        { label = T.MenuLabels.player_id,   value = "playerId", desc = T.MenuLabels.player_id_desc },
+        { label = T.MenuLabels.bill_reason, value = "reason",   desc = T.MenuLabels.reason_desc },
+        { label = T.MenuLabels.bill_amount, value = "amount",   desc = T.MenuLabels.amount_desc },
+        { label = T.MenuLabels.confirm,     value = "confirm",  desc = T.MenuLabels.confirm_desc },
     }
 
     MenuData.Open("default", GetCurrentResourceName(), "OpenBillingMenu", {
-        title = "Billing Menu",
-        subtext = "SubMenu",
+        title = T.MenuLabels.menu_title,
+        subtext = T.MenuLabels.submenu_text,
         align = "top-left",
         itemHeight = "4vh",
         elements = elements
-
     }, function(data, menu)
         if data.current.value == "confirm" then
             if playerId <= 0 or reason == "" or amount <= 0 then
-                return Core.NotifyObjective("Please fill in all fields", 5000)
+                return Core.NotifyObjective(T.Notifications.fill_all_fields, 5000)
             end
 
             menu.close()
@@ -61,32 +61,32 @@ function OpenBillingMenu()
 
         local type <const> = (data.current.value == "playerId" or data.current.value == "amount") and "number" or "text"
         local pattern <const> = (data.current.value == "playerId" or data.current.value == "amount") and "[0-9]" or "[a-zA-Z ]+"
-        local title <const> = (data.current.value == "playerId" or data.current.value == "amount") and "Only Numbers Are Allowed" or "Only Letters Are Allowed"
-        local input <const> = myInput("Billing Menu", "type here", type, pattern, title)
+        local title <const> = (data.current.value == "playerId" or data.current.value == "amount") and T.InputInfo.only_numbers_allowed or T.InputInfo.only_letters_allowed
+        local input <const> = myInput(T.MenuLabels.menu_title, "type here", type, pattern, title)
 
         local result <const> = exports.vorp_inputs:advancedInput(input)
         if not result then return end
 
         if data.current.value == "playerId" and tonumber(result) > 0 then
-            menu.setElement(1, "label", "Player ID<br> <b> Added ID:" .. result)
-            menu.setElement(1, "desc", "The ID of the player you want to bill")
+            menu.setElement(1, "label", T.MenuLabels.player_id .. "<br><b> "..T.InputInfo.Added .. result)
+            menu.setElement(1, "desc", T.MenuLabels.player_id_desc)
             menu.refresh()
             playerId = tonumber(result)
         end
 
         if data.current.value == "reason" then
-            menu.setElement(2, "label", "Bill Reason<br>bill reason added")
-            menu.setElement(2, "desc", "Bill reason: " .. result)
+            menu.setElement(2, "label", T.MenuLabels.bill_reason .. "<br> " .. T.Notifications.bill_successful)
+            menu.setElement(2, "desc", T.MenuLabels.reason_desc .. ": " .. result)
             menu.refresh()
             reason = result
         end
 
         if data.current.value == "amount" and tonumber(result) > 0 then
             if tonumber(result) > Billing.MaxBillAmount then
-                return Core.NotifyObjective("You can not bill more than " .. Billing.MaxBillAmount, 5000)
+                return Core.NotifyObjective(T.Notifications.max_bill_exceeded .. Billing.MaxBillAmount, 5000)
             end
-            menu.setElement(3, "label", "Bill Amount <br>Amount added: $" .. result)
-            menu.setElement(3, "desc", "The amount of money to bill")
+            menu.setElement(3, "label", T.MenuLabels.bill_amount .. "<br> " .. T.Notifications.bill_received .. "$" .. result)
+            menu.setElement(3, "desc", T.MenuLabels.amount_desc)
             menu.refresh()
             amount = tonumber(result)
         end

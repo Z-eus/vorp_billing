@@ -1,4 +1,5 @@
-local Core = exports.vorp_core:GetCore()
+local Core <const> = exports.vorp_core:GetCore()
+local T <const> = Translation.Langs[Billing.Lang] -- Load the active language for the server
 
 RegisterCommand(Billing.Command, function(source, args, rawCommand)
     local user <const> = Core.getUser(source)
@@ -9,11 +10,11 @@ RegisterCommand(Billing.Command, function(source, args, rawCommand)
     local grade <const> = character.jobGrade
 
     if not Billing.Jobs[job] and Billing.Jobs[job] < grade then
-        return Core.NotifyObjective(source, "You are not allowed to use this command", 5000)
+        return Core.NotifyObjective(source, T.Notifications.not_allowed_command, 5000)
     end
 
     if not Billing.GetIsOnduty(source) then
-        return Core.NotifyObjective(source, "You are not on duty", 5000)
+        return Core.NotifyObjective(source, T.Notifications.not_on_duty, 5000)
     end
 
     TriggerClientEvent("vorp_billing:client:openMenu", source)
@@ -25,56 +26,66 @@ AddEventHandler("vorp:SelectedCharacter", function(source, char)
     local grade <const> = char.jobGrade
 
     if Billing.Jobs[job] and Billing.Jobs[job] >= grade then
-        TriggerClientEvent("chat:addSuggestion", source, Billing.Command, "Bill a player", {})
+        TriggerClientEvent("chat:addSuggestion", source, Billing.Command, T.MenuLabels.confirm_desc, {})
     end
 end)
 
 -- we need an event to register the bill
 RegisterNetEvent("vorp_billing:server:SendBill", function(data)
     local _source <const> = source
-
     local user <const> = Core.getUser(_source)
     if not user then return end
 
-    local character <const> = user.getUsedCharacter
-    local job <const> = character.job
-    local jobGrade <const> = character.jobGrade
+    local sourceCharacter <const>  = user.getUsedCharacter
+    local charname <const>         = sourceCharacter.firstname .. ' ' .. sourceCharacter.lastname
+    local sourceIdentifier <const> = sourceCharacter.identifier
+    local steamname <const>        = GetPlayerName(_source)
+
+    local job <const>              = sourceCharacter.job
+    local jobGrade <const>         = sourceCharacter.jobGrade
 
     if not Billing.Jobs[job] and Billing.Jobs[job] < jobGrade then
-        return Core.NotifyObjective(_source, "You are not allowed to bill", 5000)
+        return Core.NotifyObjective(_source, T.Notifications.not_allowed_bill, 5000)
     end
 
     if data.playerId == _source then
-        return Core.NotifyObjective(_source, "You can not bill yourself", 5000)
+        return Core.NotifyObjective(_source, T.Notifications.self_billing_error, 5000)
     end
 
     local target <const> = Core.getUser(data.playerId)
     if not target then
-        return Core.NotifyObjective(_source, "Target not found you cant bill players that are not online", 5000)
+        return Core.NotifyObjective(_source, T.Notifications.target_not_found, 5000)
     end
 
-    local distance <const> = #(GetEntityCoords(GetPlayerPed(_source)) - GetEntityCoords(GetPlayerPed(data.playerId)))
+    local distance = #(GetEntityCoords(GetPlayerPed(_source)) - GetEntityCoords(GetPlayerPed(data.playerId)))
     if distance > 5.0 then
-        return Core.NotifyObjective(_source, "Target is too far away from you", 5000)
+        return Core.NotifyObjective(_source, T.Notifications.target_too_far, 5000)
     end
 
     if data.amount > Billing.MaxBillAmount then
-        return Core.NotifyObjective(_source, "You can not bill more than " .. Billing.MaxBillAmount, 5000)
-    end
-
-    if Billing.GiveMoneyToJob then
-        character.addCurrency(0, data.amount)
+        return Core.NotifyObjective(_source, T.Notifications.max_bill_exceeded .. Billing.MaxBillAmount, 5000)
     end
 
     if Billing.AllowBillingNegative then
         target.getUsedCharacter.addCurrency(0, data.amount)
-        Core.NotifyObjective(_source, "You have successfully billed " .. target.getUsedCharacter.firstname .. " " .. target.getUsedCharacter.lastname .. " for " .. data.amount, 5000)
-        Core.NotifyObjective(data.playerId, "You have been billed for " .. data.amount .. " by " .. character.firstname .. " " .. character.lastname .. " for " .. data.reason, 5000)
+        Core.NotifyObjective(_source,
+            T.Notifications.bill_successful ..
+            " " ..
+            target.getUsedCharacter.firstname ..
+            " " .. target.getUsedCharacter.lastname .. " " .. T.Notifications.For .. " " .. data.amount, 5000)
+        Core.NotifyObjective(data.playerId,
+            T.Notifications.bill_received ..
+            data.amount ..
+            " " .. T.ReceiptInfo.billed_by .. " " .. charname .. " " .. T.Notifications.For .. " " .. data.reason, 5000)
     else
-        if character.money < data.amount then
-            return Core.NotifyObjective(_source, "Player don't have enough money to pay the bill", 5000)
+        if sourceCharacter.money < data.amount then
+            return Core.NotifyObjective(_source, T.Notifications.insufficient_funds, 5000)
         end
         target.getUsedCharacter.addCurrency(0, data.amount)
+    end
+
+    if Billing.GiveMoneyToJob then
+        sourceCharacter.addCurrency(0, data.amount)
     end
 
     if Billing.GiveReceipt then
@@ -82,12 +93,31 @@ RegisterNetEvent("vorp_billing:server:SendBill", function(data)
         local month <const> = os.date("%m")
         local year <const> = Billing.ServerYear
         local metadata <const> = {
-            description = "This is a bill you received<br>Amount: " .. data.amount ..
-                "<br>Billed By: " .. character.firstname .. " " .. character.lastname ..
-                "<br>Date: " .. day .. "/" .. month .. "/" .. year ..
-                "<br>Reason: " .. data.reason
+            description = T.ReceiptInfo.receipt_description ..
+                "<br> " .. T.ReceiptInfo.Ammount .. ": " .. data.amount ..
+                "<br>" .. T.ReceiptInfo.billed_by .. ": " .. charname ..
+                "<br>" .. T.ReceiptInfo.date .. ": " .. day .. "/" .. month .. "/" .. year ..
+                "<br>" .. T.ReceiptInfo.reason .. ": " .. data.reason
         }
         exports.vorp_inventory:addItem(data.playerId, Billing.ReceiptItem, 1, metadata)
     end
-    --! add webhook here
+
+    -- Webhook for bill sent
+    local targetCharacter <const> = target.getUsedCharacter
+    local targetname <const> = targetCharacter.firstname .. ' ' .. targetCharacter.lastname
+    local targetIdentifier <const> = targetCharacter.identifier
+    local targetSteamname <const> = GetPlayerName(data.playerId)
+
+    local description = "**" .. Logs.Lang.BillSent .. "**" .. "\n" ..
+        "**" .. Logs.Lang.BilledBy .. "** " .. charname .. "\n" ..
+        "**" .. Logs.Lang.BilledPlayer .. "** " .. targetname .. "\n" ..
+        "**" .. Logs.Lang.BillAmount .. "** " .. data.amount .. "\n" ..
+        "**" .. Logs.Lang.BillReason .. "** " .. data.reason .. "\n" ..
+        "**" .. Logs.Lang.OfficerSteam .. "** " .. steamname .. "\n" ..
+        "**" .. Logs.Lang.OfficerID .. "** " .. sourceIdentifier .. "\n" ..
+        "**" .. Logs.Lang.TargetSteam .. "** " .. targetSteamname .. "\n" ..
+        "**" .. Logs.Lang.TargetID .. "** " .. targetIdentifier
+
+    Core.AddWebhook(Logs.Lang.BillSent, Logs.Webhook, description, Logs.color, Logs.Namelogs, Logs.logo, Logs.footerlogo,
+        Logs.avatar)
 end)
