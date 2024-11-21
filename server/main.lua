@@ -9,7 +9,7 @@ RegisterCommand(Billing.Command, function(source, args, rawCommand)
     local job <const> = character.job
     local grade <const> = character.jobGrade
 
-    if not Billing.Jobs[job] and Billing.Jobs[job] < grade then
+    if not Billing.Jobs[job] or Billing.Jobs[job] < grade then
         return Core.NotifyObjective(source, T.Notifications.not_allowed_command, 5000)
     end
 
@@ -44,7 +44,7 @@ RegisterNetEvent("vorp_billing:server:SendBill", function(data)
     local job <const>              = sourceCharacter.job
     local jobGrade <const>         = sourceCharacter.jobGrade
 
-    if not Billing.Jobs[job] and Billing.Jobs[job] < jobGrade then
+    if not Billing.Jobs[job] or Billing.Jobs[job] < jobGrade then
         return Core.NotifyObjective(_source, T.Notifications.not_allowed_bill, 5000)
     end
 
