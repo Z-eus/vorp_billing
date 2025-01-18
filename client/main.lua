@@ -62,7 +62,7 @@ function OpenBillingMenu()
         local type <const> = (data.current.value == "playerId" or data.current.value == "amount") and "number" or "text"
         local pattern <const> = (data.current.value == "playerId" or data.current.value == "amount") and "[0-9]" or "[a-zA-Z ]+"
         local title <const> = (data.current.value == "playerId" or data.current.value == "amount") and T.InputInfo.only_numbers_allowed or T.InputInfo.only_letters_allowed
-        local input <const> = myInput(T.MenuLabels.menu_title, "type here", type, pattern, title)
+        local input <const> = myInput(T.MenuLabels.menu_title, T.MenuLabels.menu_input, type, pattern, title)
 
         local result <const> = exports.vorp_inputs:advancedInput(input)
         if not result then return end

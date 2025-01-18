@@ -13,7 +13,7 @@ Translation.Langs = {
             amount_desc    = "The amount of money to bill",
             confirm        = "Confirm",
             confirm_desc   = "Submit the bill",
-
+            menu_input     = "Type Here"
         },
 
         Notifications = {
